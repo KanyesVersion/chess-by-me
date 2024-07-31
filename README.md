@@ -6,7 +6,6 @@ The game lags when either king enters check because I use exponentially layered 
 Missing/To add:
 - En passant
 - Stalemate
-- Proper notation for discovered checks
 - Title screen and game settings
 - Abort game/resign
 - Rewind moves, see board in previous states
