@@ -81,6 +81,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: .25rem .5rem ;
+    overflow: auto;
 }
 
 .move-span {
