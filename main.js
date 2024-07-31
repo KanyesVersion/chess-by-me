@@ -1052,7 +1052,7 @@ function getMoveNotation(fromSquare, toSquare) {
     const pieceNotation = piece.charAt(1);
     const takes = getPieceFromSquare(toSquare) !== '';
     let differentiator = '';
-    const check = wouldMoveResultCheck(fromSquare, toSquare, );
+    const check = wouldMoveResultCheck(fromSquare, toSquare);
 
     if (pieceNotation === 'N' || pieceNotation === 'R') {
         const otherSquare = getSquaresFromPieces(piece).find(el => el !== fromSquare);
