@@ -55,6 +55,7 @@ const isClockTicking = {
 };
 let whiteTime = 6001;
 let blackTime = 6000;
+let isPaused = false;
 
 class PromotionModal {
     constructor(x, y, color) {
@@ -165,7 +166,11 @@ window.addEventListener('mouseup', () => {
                     playingText.textContent = 'CHECKMATE \n WHITE WINS';
                     currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
                     restartBtn.classList.remove('hidden');
+                    turn = '';
                     turnUi.classList.add('hidden');
+                    isPaused = true;
+                    isClockTicking.white = false;
+                    isClockTicking.black = false;
                 }
             }
         
@@ -174,7 +179,11 @@ window.addEventListener('mouseup', () => {
                     playingText.textContent = 'CHECKMATE \n BLACK WINS';
                     currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
                     restartBtn.classList.remove('hidden');
+                    turn = '';
                     turnUi.classList.add('hidden');
+                    isPaused = true;
+                    isClockTicking.white = false;
+                    isClockTicking.black = false;
                 }
             }
         }
@@ -188,7 +197,6 @@ restartBtn.addEventListener('click', () => {
             hardRewriteSetup(index1, index2, startingSetup[index1][index2]);
         });
     });
-    turn = 'white';
     turnUi.classList.remove('hidden');
     playingText.textContent = 'Playing now:';
     restartBtn.classList.add('hidden');
@@ -199,6 +207,11 @@ restartBtn.addEventListener('click', () => {
     moveTotal = 0;
     whiteTime = 6001;
     blackTime = 6000;
+    isPaused = false;
+    isClockTicking.white = true;
+    oneDecSecClock();
+    turn = 'white';
+    turnUi.textContent = 'WHITE';
 });
 
 //loop
@@ -213,21 +226,25 @@ function loop() {
         modals.forEach(modal => modal.update());
     }
 
-    displayTime();
+    if (!isPaused) {
+        displayTime();
+    }
 }
 
 //functions
 
 function oneDecSecClock() {
-    if (isClockTicking.white) {
-        whiteTime--;
-    }
-    if (isClockTicking.black) {
-        blackTime--;
-    }
+    if (!isPaused) {
+        if (isClockTicking.white) {
+            whiteTime--;
+        }
+        if (isClockTicking.black) {
+            blackTime--;
+        }
 
-    // loop
-    setTimeout(oneDecSecClock, 100);
+        // loop
+        setTimeout(oneDecSecClock, 100);
+    }
 }
 
 function movePiece(fromSquare, toSquare) {
