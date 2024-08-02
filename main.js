@@ -56,6 +56,7 @@ const isClockTicking = {
 let whiteTime = 6001;
 let blackTime = 6000;
 let isPaused = false;
+let currMoveAudio = 'piecemove.ogg';
 
 class PromotionModal {
     constructor(x, y, color) {
@@ -162,8 +163,10 @@ window.addEventListener('mouseup', () => {
 
             // check for checkmate
             if (turn === 'black' && isBlackInCheck()) {
+                currMoveAudio = 'check.ogg';
                 if (!getBlackMoves().length) {
                     playingText.textContent = 'CHECKMATE \n WHITE WINS';
+                    currMoveAudio = 'checkmate.ogg';
                     currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
                     restartBtn.classList.remove('hidden');
                     turn = '';
@@ -175,8 +178,10 @@ window.addEventListener('mouseup', () => {
             }
         
             if (turn === 'white' && isWhiteInCheck()) {
+                currMoveAudio = 'check.ogg';
                 if (!getWhiteMoves().length) {
                     playingText.textContent = 'CHECKMATE \n BLACK WINS';
+                    currMoveAudio = 'checkmate.ogg';
                     currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
                     restartBtn.classList.remove('hidden');
                     turn = '';
@@ -186,6 +191,9 @@ window.addEventListener('mouseup', () => {
                     isClockTicking.black = false;
                 }
             }
+
+            const pieceMoveSound = getAudio(currMoveAudio);
+            pieceMoveSound.play();
         }
     } else return;
 });
@@ -249,6 +257,7 @@ function oneDecSecClock() {
 
 function movePiece(fromSquare, toSquare) {
     moveHistory.push({turn: turn, notation: getMoveNotation(fromSquare, toSquare)});
+    currMoveAudio = getPieceFromSquare(toSquare) === '' ? 'piecemove.ogg' : 'piececapture.ogg';
     const pieceCopy = piecesSetup[rankToIndex(fromSquare.charAt(1))][fileToIndex(fromSquare.charAt(0))];
     piecesSetup[rankToIndex(fromSquare.charAt(1))][fileToIndex(fromSquare.charAt(0))] = '';
     piecesSetup[rankToIndex(toSquare.charAt(1))][fileToIndex(toSquare.charAt(0))] = pieceCopy;
@@ -820,10 +829,10 @@ function isMovePossible(fromSquare, toSquare) {
         vars.deltaRankFromTo === 1 && vars.deltaFileFromTo === -1,
         vars.deltaRankFromTo === -1 && vars.deltaFileFromTo === 1,
         vars.deltaRankFromTo === -1 && vars.deltaFileFromTo === -1,
-        vars.deltaFileFromTo === 2 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        vars.deltaFileFromTo === -2 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
-        vars.deltaFileFromTo === 2 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        vars.deltaFileFromTo === -2 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        vars.deltaFileFromTo === 2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        vars.deltaFileFromTo === -2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        vars.deltaFileFromTo === 2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        vars.deltaFileFromTo === -2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
     ];
 
     let isPossible;
@@ -905,10 +914,10 @@ function isMovePossibleAlt(fromSquare, toSquare, arr) {
         deltaRank(fromSquare, toSquare) === 1 && deltaFile(fromSquare, toSquare) === -1,
         deltaRank(fromSquare, toSquare) === -1 && deltaFile(fromSquare, toSquare) === 1,
         deltaRank(fromSquare, toSquare) === -1 && deltaFile(fromSquare, toSquare) === -1,
-        deltaFile(fromSquare, toSquare) === 2 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        deltaFile(fromSquare, toSquare) === -2 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
-        deltaFile(fromSquare, toSquare) === 2 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        deltaFile(fromSquare, toSquare) === -2 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        deltaFile(fromSquare, toSquare) === 2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        deltaFile(fromSquare, toSquare) === -2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        deltaFile(fromSquare, toSquare) === 2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        deltaFile(fromSquare, toSquare) === -2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
     ];
 
     let isPossible;
@@ -1095,4 +1104,10 @@ function displayTime() {
     const blackSeconds = Math.floor((blackTime % 600) / 10);
     const blackSecondsZero = blackSeconds < 10 ? '0' : '';
     blackTimeUI.textContent = blackMinutes + ':' + blackSecondsZero + blackSeconds;
+}
+
+function getAudio(file) {
+    const sound = new Audio();
+    sound.src = `./audio/${file}`;
+    return sound;
 }
