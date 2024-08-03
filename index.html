@@ -8,8 +8,30 @@
 </head>
 <body>
     <div id="ui" class="ui-column">
-        <p id="playing-text">Playing now:</p>
-        <p id="turn">WHITE</p>
+        <div id="playing-container" class="hidden">
+            <p id="playing-text">Playing now:</p>
+            <p id="turn"></p>
+        </div>
+        <div id="title-container">
+            <p>Enter your name:</p>
+            <div class="name-wrapper">
+                <img src="./pieces/white-circle.png" height="16"><input id="white-name-input" type="text" placeholder="WHITE" maxlength="8">
+            </div>
+            <div class="name-wrapper">
+                <img src="./pieces/black-circle.png" height="16"><input id="black-name-input" type="text" placeholder="BLACK" maxlength="8">
+            </div>
+            <div id="time-mode-container">
+                <select id="time-mode-dropdown">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                </select>
+                <div>minute game</div>
+            </div>
+            <button id="start-btn">START GAME</button>
+        </div>
         <button id="restart-btn" class="hidden">Restart?</button>
     </div>
     <canvas id="canvas" width="640" height="640"></canvas>
@@ -18,9 +40,9 @@
             <p>Game</p>
             <div id="move-list"></div>  
         </div>
-        <div id="time-section">
-            <div class="color-time-wrapper"><img src="./pieces/white-circle.png" alt="" srcset="" height="16"><div id="white-time" class="color-time"></div></div>
-            <div class="color-time-wrapper"><img src="./pieces/black-circle.png" alt="" srcset="" height="16"><div id="black-time" class="color-time"></div></div>
+        <div id="time-section" class="hidden">
+            <div class="color-time-wrapper"><img src="./pieces/white-circle.png" height="16"><div id="white-time" class="color-time"></div></div>
+            <div class="color-time-wrapper"><img src="./pieces/black-circle.png" height="16"><div id="black-time" class="color-time"></div></div>
         </div>
     </div>
     <script src="main.js"></script>

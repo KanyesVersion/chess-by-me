@@ -6,6 +6,10 @@ const moveListUi = document.getElementById('move-list');
 const whiteTimeUI = document.getElementById('white-time')
 const blackTimeUI = document.getElementById('black-time')
 const restartBtn = document.getElementById('restart-btn');
+const whiteNameInput = document.getElementById('white-name-input');
+const blackNameInput = document.getElementById('black-name-input');
+const timeModeInput = document.getElementById('time-mode-dropdown');
+const startBtn = document.getElementById('start-btn');
 const lightSquareColor = '#ffdac2';
 const darkSquareColor = '#c2834b';
 const squareSize = canvas.width / 8;
@@ -57,6 +61,9 @@ let whiteTime = 6001;
 let blackTime = 6000;
 let isPaused = false;
 let currMoveAudio = 'piecemove.ogg';
+let currRoom = 'title';
+let whiteName = 'WHITE';
+let blackName = 'BLACK';
 
 class PromotionModal {
     constructor(x, y, color) {
@@ -95,6 +102,10 @@ class PromotionModal {
         this.draw();
     }
 }
+
+const canvasLayer = createCanvasLayer();
+const layerCtx = canvasLayer.getContext('2d');
+addDarkCanvasLayer(canvasLayer, layerCtx);
 
 loop();
 oneDecSecClock();
@@ -151,21 +162,22 @@ window.addEventListener('mouseup', () => {
                 turn = 'black';
                 isClockTicking.white = false;
                 isClockTicking.black = true;
+                turnUi.innerHTML = `<img src="./pieces/black-circle.png" height="24"> <div>${blackName}</div>`;
             } else {
                 displayBlackMove();
                 turn = 'white';
                 isClockTicking.white = true;
                 isClockTicking.black = false;
+                turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> ${whiteName}`;
                 move++;
             }
             moveTotal++;
-            turnUi.textContent = turn.toUpperCase();
 
             // check for checkmate
             if (turn === 'black' && isBlackInCheck()) {
                 currMoveAudio = 'check.ogg';
                 if (!getBlackMoves().length) {
-                    playingText.textContent = 'CHECKMATE \n WHITE WINS';
+                    playingText.textContent = `CHECKMATE \n ${whiteName} WINS`;
                     currMoveAudio = 'checkmate.ogg';
                     currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
                     restartBtn.classList.remove('hidden');
@@ -180,7 +192,7 @@ window.addEventListener('mouseup', () => {
             if (turn === 'white' && isWhiteInCheck()) {
                 currMoveAudio = 'check.ogg';
                 if (!getWhiteMoves().length) {
-                    playingText.textContent = 'CHECKMATE \n BLACK WINS';
+                    playingText.textContent = `CHECKMATE \n ${blackName} WINS`;
                     currMoveAudio = 'checkmate.ogg';
                     currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
                     restartBtn.classList.remove('hidden');
@@ -213,29 +225,77 @@ restartBtn.addEventListener('click', () => {
     moveListUi.innerHTML = '';
     move = 1;
     moveTotal = 0;
-    whiteTime = 6001;
-    blackTime = 6000;
+    
+    const timeMode = parseInt(timeModeInput.value);
+    const time = timeMode * 600;
+    whiteTime = time;
+    blackTime = time;
+
     isPaused = false;
     isClockTicking.white = true;
     oneDecSecClock();
     turn = 'white';
-    turnUi.textContent = 'WHITE';
+    turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
+});
+
+startBtn.addEventListener('click', () => {
+    whiteName = whiteNameInput.value ? whiteNameInput.value : 'WHITE';
+    blackName = blackNameInput.value ? blackNameInput.value : 'BLACK';
+    const timeMode = parseInt(timeModeInput.value);
+    const time = timeMode * 600;
+
+    whiteTime = time;
+    blackTime = time;
+    document.getElementById('title-container').classList.add('hidden');
+    document.getElementById('playing-container').classList.remove('hidden');
+    document.getElementById('time-section').classList.remove('hidden');
+    turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
+    canvasLayer.remove();
+    currRoom = 'game';
+    loop();
 });
 
 //loop
 
 function loop() {
-    requestAnimationFrame(loop);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBoard();
-    drawPieces();
-    
-    if (modals.length) {
-        modals.forEach(modal => modal.update());
+    if (currRoom === 'title') {
+        drawBoard();
+        drawPieces();
     }
 
-    if (!isPaused) {
-        displayTime();
+    if (currRoom === 'game') {
+        requestAnimationFrame(loop);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+        drawPieces();
+
+        if (modals.length) {
+            modals.forEach(modal => modal.update());
+        }
+
+        if (!isPaused) {
+            displayTime();
+        }
+
+        if (whiteTime <= 0) {
+            playingText.textContent = `${blackName} WINS ON TIME`;
+            restartBtn.classList.remove('hidden');
+            turn = '';
+            turnUi.classList.add('hidden');
+            isPaused = true;
+            isClockTicking.white = false;
+            isClockTicking.black = false;
+        }
+        
+        if (blackTime <= 0) {
+            playingText.textContent = `${whiteName} WINS ON TIME`;
+            restartBtn.classList.remove('hidden');
+            turn = '';
+            turnUi.classList.add('hidden');
+            isPaused = true;
+            isClockTicking.white = false;
+            isClockTicking.black = false;
+        }
     }
 }
 
@@ -1110,4 +1170,21 @@ function getAudio(file) {
     const sound = new Audio();
     sound.src = `./audio/${file}`;
     return sound;
+}
+
+function createCanvasLayer() {
+    const newCanvas = document.createElement('canvas');
+    newCanvas.width = canvas.width;
+    newCanvas.height = canvas.height;
+    newCanvas.style.position = 'absolute';
+    newCanvas.style.zIndex = '1';
+    newCanvas.style.top = canvas.offsetTop + 'px';
+    newCanvas.style.left = canvas.offsetLeft + 'px';
+    return newCanvas;
+}
+
+function addDarkCanvasLayer(ncanvas, nctx) {
+    document.body.appendChild(ncanvas);
+    nctx.fillStyle = '#0007';
+    nctx.fillRect(0, 0, ncanvas.width, ncanvas.height);
 }
