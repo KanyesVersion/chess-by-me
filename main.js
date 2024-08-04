@@ -103,10 +103,6 @@ class PromotionModal {
     }
 }
 
-const canvasLayer = createCanvasLayer();
-const layerCtx = canvasLayer.getContext('2d');
-addDarkCanvasLayer(canvasLayer, layerCtx);
-
 loop();
 oneDecSecClock();
 
@@ -250,7 +246,6 @@ startBtn.addEventListener('click', () => {
     document.getElementById('playing-container').classList.remove('hidden');
     document.getElementById('time-section').classList.remove('hidden');
     turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
-    canvasLayer.remove();
     currRoom = 'game';
     loop();
 });
@@ -1170,21 +1165,4 @@ function getAudio(file) {
     const sound = new Audio();
     sound.src = `./audio/${file}`;
     return sound;
-}
-
-function createCanvasLayer() {
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width = canvas.width;
-    newCanvas.height = canvas.height;
-    newCanvas.style.position = 'absolute';
-    newCanvas.style.zIndex = '1';
-    newCanvas.style.top = canvas.offsetTop + 'px';
-    newCanvas.style.left = canvas.offsetLeft + 'px';
-    return newCanvas;
-}
-
-function addDarkCanvasLayer(ncanvas, nctx) {
-    document.body.appendChild(ncanvas);
-    nctx.fillStyle = '#0007';
-    nctx.fillRect(0, 0, ncanvas.width, ncanvas.height);
 }
