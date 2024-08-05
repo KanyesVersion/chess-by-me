@@ -1,15 +1,24 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const playingText = document.getElementById('playing-text');
-const turnUi = document.getElementById('turn');
-const moveListUi = document.getElementById('move-list');
-const whiteTimeUI = document.getElementById('white-time')
-const blackTimeUI = document.getElementById('black-time')
+const turnDisplay = document.getElementById('turn');
+const moveListSection = document.getElementById('move-list-section');
+const moveListDisplay = document.getElementById('move-list');
+const whiteTimeDisplay = document.getElementById('white-time')
+const blackTimeDisplay = document.getElementById('black-time')
 const restartBtn = document.getElementById('restart-btn');
 const whiteNameInput = document.getElementById('white-name-input');
 const blackNameInput = document.getElementById('black-name-input');
+const timeModeContainer = document.getElementById('time-mode-container');
 const timeModeInput = document.getElementById('time-mode-dropdown');
 const startBtn = document.getElementById('start-btn');
+const runBtn = document.getElementById('run-btn');
+const turnSetContainer = document.getElementById('turn-set-container');
+const playingDropdown = document.getElementById('playing-dropdown');
+const practiceModeBtn = document.getElementById('practice-mode-btn');
+const practiceBackBtn = document.getElementById('practice-back-btn');
+const [...practiceIcons] = document.querySelectorAll('.practice-icon');
+const practiceSection = document.getElementById('practice-section');
 const lightSquareColor = '#ffdac2';
 const darkSquareColor = '#c2834b';
 const squareSize = canvas.width / 8;
@@ -54,16 +63,18 @@ const currPossLegalMoves = [];
 let moveTotal = 0;
 let move = 1;
 const isClockTicking = {
-    white: true,
+    white: false,
     black: false
 };
-let whiteTime = 6001;
+let whiteTime = 6000;
 let blackTime = 6000;
 let isPaused = false;
 let currMoveAudio = 'piecemove.ogg';
 let currRoom = 'title';
 let whiteName = 'WHITE';
 let blackName = 'BLACK';
+let currPracticePiece = null;
+const practiceSetup = createEmptySetup();
 
 class PromotionModal {
     constructor(x, y, color) {
@@ -112,15 +123,19 @@ window.addEventListener('mousemove', e => {
     mouse.x = e.clientX - canvas.offsetLeft;
     mouse.y = e.clientY - canvas.offsetTop;
     mouseInsideCanvas = mouse.x > 0 && mouse.x < canvas.width && mouse.y > 0 && mouse.y < canvas.height;
+
     if (mouseInsideCanvas) {
         squareHovered = getSquareFromPos(mouse.x, mouse.y);
     }
-    if (isMouseDown && getPieceFromSquare(squareClicked).charAt(0) === turn.charAt(0) && turn !== '' && mouseInsideCanvas) {
-        resetSquareColors();
-        changeColorOfSquare(squareClicked, colors.green);
-        if (getSquareFromPos(mouse.x, mouse.y) !== squareClicked) {
-            const hoverColor = currPossLegalMoves.includes(squareHovered) ? colors.green : colors.red;
-            changeColorOfSquare(squareHovered, hoverColor);
+
+    if (currRoom === 'game' || currRoom === 'practiceRun') {
+        if (isMouseDown && getPieceFromSquare(squareClicked).charAt(0) === turn.charAt(0) && turn !== '' && mouseInsideCanvas) {
+            resetSquareColors();
+            changeColorOfSquare(squareClicked, colors.green);
+            if (getSquareFromPos(mouse.x, mouse.y) !== squareClicked) {
+                const hoverColor = currPossLegalMoves.includes(squareHovered) ? colors.green : colors.red;
+                changeColorOfSquare(squareHovered, hoverColor);
+            }
         }
     }
 });
@@ -129,15 +144,39 @@ window.addEventListener('mousedown', () => {
     if (mouseInsideCanvas && !isModalOpen) {
         isMouseDown = true;
         squareClicked = getSquareFromPos(mouse.x, mouse.y);
-        const pieceClicked = getPieceFromSquare(squareClicked);
-        if (pieceClicked.charAt(0) === turn.charAt(0)  && turn !== '') {
-            changeColorOfSquare(squareClicked, colors.green);
-            getPossMovesFromSquare(squareClicked).forEach(el => {
-                // if (isMoveLegal(squareClicked, el)) {
-                    currPossLegalMoves.push(el);
-                // }
-            });
+
+        if (currRoom === 'game' || currRoom === 'practiceRun') {  
+            const pieceClicked = getPieceFromSquare(squareClicked);
+
+            if (pieceClicked.charAt(0) === turn.charAt(0)  && turn !== '') {
+                changeColorOfSquare(squareClicked, colors.green);
+                getPossMovesFromSquare(squareClicked).forEach(el => {
+                    // if (isMoveLegal(squareClicked, el)) {
+                        currPossLegalMoves.push(el);
+                    // }
+                });
+            }
+
         }
+
+        // practice mode
+        if (currRoom === 'practiceSet') {
+            if (currPracticePiece) {
+                const wKingSquare = getSquaresFromPieces('wK')[0];
+                const bKingSquare = getSquaresFromPieces('bK')[0];
+
+                if (currPracticePiece === 'white-king' && wKingSquare) {
+                    hardRewriteSquare(wKingSquare, '');
+                }
+                if (currPracticePiece === 'black-king' && bKingSquare) {
+                    hardRewriteSquare(bKingSquare, '');
+                }
+
+                hardRewriteSquare(squareClicked, fullNameToAbv(currPracticePiece));
+                
+            }
+        }
+
     } else if (isModalOpen && modals.length) {
         promotePawn();
     }
@@ -150,75 +189,99 @@ window.addEventListener('mouseup', () => {
 
     if (mouseInsideCanvas && !isModalOpen) {
         squareReleased = getSquareFromPos(mouse.x, mouse.y);
-        if (getPieceFromSquare(squareClicked) !== '' && isMovePossible(squareClicked, squareReleased) && isMoveLegal(squareClicked, squareReleased)) {
-            movePiece(squareClicked, squareReleased);
-
-            if (turn === 'white') {
-                displayWhiteMove();
-                turn = 'black';
-                isClockTicking.white = false;
-                isClockTicking.black = true;
-                turnUi.innerHTML = `<img src="./pieces/black-circle.png" height="24"> <div>${blackName}</div>`;
-            } else {
-                displayBlackMove();
-                turn = 'white';
-                isClockTicking.white = true;
-                isClockTicking.black = false;
-                turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> ${whiteName}`;
-                move++;
-            }
-            moveTotal++;
-
-            // check for checkmate
-            if (turn === 'black' && isBlackInCheck()) {
-                currMoveAudio = 'check.ogg';
-                if (!getBlackMoves().length) {
-                    playingText.textContent = `CHECKMATE \n ${whiteName} WINS`;
-                    currMoveAudio = 'checkmate.ogg';
-                    currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
-                    restartBtn.classList.remove('hidden');
-                    turn = '';
-                    turnUi.classList.add('hidden');
-                    isPaused = true;
-                    isClockTicking.white = false;
-                    isClockTicking.black = false;
-                }
-            }
         
-            if (turn === 'white' && isWhiteInCheck()) {
-                currMoveAudio = 'check.ogg';
-                if (!getWhiteMoves().length) {
-                    playingText.textContent = `CHECKMATE \n ${blackName} WINS`;
-                    currMoveAudio = 'checkmate.ogg';
-                    currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
-                    restartBtn.classList.remove('hidden');
+        // game or practice
+        if (currRoom === 'game' || currRoom === 'practiceRun') {
+            if (getPieceFromSquare(squareClicked) !== '' && isMovePossible(squareClicked, squareReleased) && isMoveLegal(squareClicked, squareReleased)) {
+                
+                // not likely
+                if (getPieceFromSquare(squareReleased).charAt(1) === 'K') {
+                    playingText.textContent = 'Really?';
                     turn = '';
-                    turnUi.classList.add('hidden');
+                    turnDisplay.classList.add('hidden');
                     isPaused = true;
-                    isClockTicking.white = false;
-                    isClockTicking.black = false;
                 }
-            }
 
-            const pieceMoveSound = getAudio(currMoveAudio);
-            pieceMoveSound.play();
+                movePiece(squareClicked, squareReleased);
+
+                if (turn === 'white') {
+                    turn = 'black';
+                    turnDisplay.innerHTML = `<img src="./pieces/black-circle.png" height="24"> <div>${blackName}</div>`;
+
+                    if (currRoom === 'game') {
+                        displayWhiteMove();
+                        isClockTicking.white = false;
+                        isClockTicking.black = true;
+                    }
+
+                } else if (turn === 'black') {
+                    turn = 'white';
+                    turnDisplay.innerHTML = `<img src="./pieces/white-circle.png" height="24"> ${whiteName}`;
+
+                    if (currRoom === 'game') {
+                        displayBlackMove();
+                        isClockTicking.white = true;
+                        isClockTicking.black = false;
+                        move++;
+                    }
+                }
+                moveTotal++;
+
+                // check for checkmate
+                if (turn === 'black' && isBlackInCheck()) {
+                    currMoveAudio = 'check.ogg';
+                    if (!getBlackMoves().length) {
+                        playingText.textContent = `CHECKMATE \n ${whiteName} WINS`;
+                        currMoveAudio = 'checkmate.ogg';
+                        turn = '';
+                        turnDisplay.classList.add('hidden');
+                        isPaused = true;
+
+                        if (currRoom === 'game') {
+                            currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
+                            isClockTicking.white = false;
+                            isClockTicking.black = false;
+                            restartBtn.classList.remove('hidden');
+                        }
+                    }
+                }
+            
+                if (turn === 'white' && isWhiteInCheck()) {
+                    currMoveAudio = 'check.ogg';
+                    if (!getWhiteMoves().length) {
+                        playingText.textContent = `CHECKMATE \n ${blackName} WINS`;
+                        currMoveAudio = 'checkmate.ogg';
+                        turn = '';
+                        turnDisplay.classList.add('hidden');
+                        isPaused = true;
+
+                        if (currRoom === 'game') {
+                            currMoveSpan.lastChild.textContent = currMoveSpan.lastChild.textContent.replace('+', '#');
+                            isClockTicking.white = false;
+                            isClockTicking.black = false;
+                            restartBtn.classList.remove('hidden');
+                        }
+                    }
+                }
+                // end of checkmate
+
+                const pieceMoveSound = getAudio(currMoveAudio);
+                pieceMoveSound.play();
+            }
         }
-    } else return;
+    }
 });
 
 restartBtn.addEventListener('click', () => {
     resetSquareColors();
-    piecesSetup.forEach((el, index1) => {
-        el.forEach((_, index2) => {
-            hardRewriteSetup(index1, index2, startingSetup[index1][index2]);
-        });
-    });
-    turnUi.classList.remove('hidden');
+    rewriteSetupToInitial();
+
+    turnDisplay.classList.remove('hidden');
     playingText.textContent = 'Playing now:';
     restartBtn.classList.add('hidden');
     squaresMovedHistory.splice(0);
     moveHistory.splice(0);
-    moveListUi.innerHTML = '';
+    moveListDisplay.innerHTML = '';
     move = 1;
     moveTotal = 0;
     
@@ -231,23 +294,99 @@ restartBtn.addEventListener('click', () => {
     isClockTicking.white = true;
     oneDecSecClock();
     turn = 'white';
-    turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
+    turnDisplay.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
 });
 
 startBtn.addEventListener('click', () => {
+    // names
     whiteName = whiteNameInput.value ? whiteNameInput.value : 'WHITE';
     blackName = blackNameInput.value ? blackNameInput.value : 'BLACK';
+
+    // time
     const timeMode = parseInt(timeModeInput.value);
     const time = timeMode * 600;
-
     whiteTime = time;
     blackTime = time;
+    isClockTicking.white = true;
+
+    //ui
     document.getElementById('title-container').classList.add('hidden');
     document.getElementById('playing-container').classList.remove('hidden');
     document.getElementById('time-section').classList.remove('hidden');
-    turnUi.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
+    turnDisplay.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${whiteName}</div>`;
+
+    // game
     currRoom = 'game';
     loop();
+});
+
+runBtn.addEventListener('click', () => {
+    const wKingExists = getSquaresFromPieces('wK').length;
+    const bKingExists = getSquaresFromPieces('bK').length;
+
+    if (wKingExists && bKingExists) {
+        // game
+        turn = playingDropdown.value;
+        currRoom = 'practiceRun';
+        loop();
+
+        // ui
+        whiteName = whiteNameInput.value ? whiteNameInput.value : 'WHITE';
+        blackName = blackNameInput.value ? blackNameInput.value : 'BLACK';
+        document.getElementById('title-container').classList.add('hidden');
+        document.getElementById('playing-container').classList.remove('hidden');
+        practiceSection.classList.add('hidden');    
+        turnDisplay.innerHTML = `<img src="./pieces/white-circle.png" height="24"> <div>${turn === 'white' ? whiteName : blackName}</div>`;
+
+    } else {
+        alert('Can\'t play chess without both kings');
+
+        // document.getElementById('ui').insertAdjacentHTML('beforeend', 
+        //     '<div style="position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%); font-size: 1.1rem;">Can\'t play chess without both kings</div>'
+        // );
+    }
+});
+
+practiceModeBtn.addEventListener('click', () => {
+    // ui
+    practiceSection.classList.remove('hidden');
+    moveListSection.classList.add('hidden');
+    runBtn.classList.remove('hidden');
+    startBtn.classList.add('hidden');
+    practiceModeBtn.classList.add('hidden');
+    practiceBackBtn.classList.remove('hidden');
+    timeModeContainer.classList.add('hidden');
+    turnSetContainer.classList.remove('hidden');
+
+    // game
+    currRoom = 'practiceSet';
+    clearSetup();
+    loop();
+});
+
+practiceBackBtn.addEventListener('click', () => {
+    // ui
+    practiceSection.classList.add('hidden');
+    moveListSection.classList.remove('hidden');
+    runBtn.classList.add('hidden');
+    startBtn.classList.remove('hidden');
+    practiceModeBtn.classList.remove('hidden');
+    practiceBackBtn.classList.add('hidden');
+    timeModeContainer.classList.remove('hidden');
+    turnSetContainer.classList.add('hidden');
+
+    // game
+    currRoom = 'title';
+    rewriteSetupToInitial();
+    loop();
+});
+
+practiceIcons.forEach(icon => {
+    icon.addEventListener('click', () => {
+        currPracticePiece = icon.id.replace('practice-', '').replace('-icon', '');
+        console.log(currPracticePiece);
+        document.getElementById('current-practice-icon').innerHTML = `<img src="./pieces/${currPracticePiece}.png">`;
+    });
 });
 
 //loop
@@ -255,7 +394,6 @@ startBtn.addEventListener('click', () => {
 function loop() {
     if (currRoom === 'title') {
         drawBoard();
-        drawPieces();
     }
 
     if (currRoom === 'game') {
@@ -276,7 +414,7 @@ function loop() {
             playingText.textContent = `${blackName} WINS ON TIME`;
             restartBtn.classList.remove('hidden');
             turn = '';
-            turnUi.classList.add('hidden');
+            turnDisplay.classList.add('hidden');
             isPaused = true;
             isClockTicking.white = false;
             isClockTicking.black = false;
@@ -286,10 +424,32 @@ function loop() {
             playingText.textContent = `${whiteName} WINS ON TIME`;
             restartBtn.classList.remove('hidden');
             turn = '';
-            turnUi.classList.add('hidden');
+            turnDisplay.classList.add('hidden');
             isPaused = true;
             isClockTicking.white = false;
             isClockTicking.black = false;
+        }
+    }
+
+    if (currRoom === 'practiceSet') {
+        requestAnimationFrame(loop);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+        drawPieces();
+
+        if (currPracticePiece) {
+            ctx.drawImage(img(`${currPracticePiece}.png`), mouse.x - squareSize / 2, mouse.y - squareSize / 2, squareSize, squareSize);
+        }
+    }
+
+    if (currRoom === 'practiceRun') {
+        requestAnimationFrame(loop);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+        drawPieces();
+
+        if (modals.length) {
+            modals.forEach(modal => modal.update());
         }
     }
 }
@@ -313,9 +473,9 @@ function oneDecSecClock() {
 function movePiece(fromSquare, toSquare) {
     moveHistory.push({turn: turn, notation: getMoveNotation(fromSquare, toSquare)});
     currMoveAudio = getPieceFromSquare(toSquare) === '' ? 'piecemove.ogg' : 'piececapture.ogg';
-    const pieceCopy = piecesSetup[rankToIndex(fromSquare.charAt(1))][fileToIndex(fromSquare.charAt(0))];
-    piecesSetup[rankToIndex(fromSquare.charAt(1))][fileToIndex(fromSquare.charAt(0))] = '';
-    piecesSetup[rankToIndex(toSquare.charAt(1))][fileToIndex(toSquare.charAt(0))] = pieceCopy;
+    const pieceCopy = getPieceFromSquare(fromSquare);
+    hardRewriteSquare(fromSquare, '');
+    hardRewriteSquare(toSquare, pieceCopy);
     squaresMovedHistory.push(fromSquare);
     
     //special moves
@@ -390,9 +550,60 @@ function initializeImages() {
 
 function drawPieces() {
     piecesSetup.forEach((row, index) => {
-        const y = index * canvas.width / 8;
-        row.forEach((square, index) => {
-            const x = index * canvas.height / 8;
+        const y = index * squareSize;
+        row.forEach((square, index2) => {
+            const x = index2 * squareSize;
+            let img;
+            if (square !== '') {
+                switch (square) {
+                    case 'bR':
+                        img = images[0];
+                        break;
+                    case 'bN':
+                        img = images[1];
+                        break;
+                    case 'bB':
+                        img = images[2];
+                        break;
+                    case 'bQ':
+                        img = images[3];
+                        break;
+                    case 'bK':
+                        img = images[4];
+                        break;
+                    case 'bP':
+                        img = images[5];
+                        break;
+                    case 'wR':
+                        img = images[6];
+                        break;
+                    case 'wN':
+                        img = images[7];
+                        break;
+                    case 'wB':
+                        img = images[8];
+                        break;
+                    case 'wQ':
+                        img = images[9];
+                        break;
+                    case 'wK':
+                        img = images[10];
+                        break;
+                    case 'wP':
+                        img = images[11];
+                        break;
+                }
+                ctx.drawImage(img, x, y, canvas.width / 8, canvas.height / 8);
+            }
+        }); 
+    });
+}
+
+function drawPiecesAlt(setup) {
+    setup.forEach((rank, index) => {
+        const y = index * squareSize;
+        rank.forEach((square, index2) => {
+            const x = index2 * squareSize;
             let img;
             if (square !== '') {
                 switch (square) {
@@ -884,10 +1095,10 @@ function isMovePossible(fromSquare, toSquare) {
         vars.deltaRankFromTo === 1 && vars.deltaFileFromTo === -1,
         vars.deltaRankFromTo === -1 && vars.deltaFileFromTo === 1,
         vars.deltaRankFromTo === -1 && vars.deltaFileFromTo === -1,
-        vars.deltaFileFromTo === 2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        vars.deltaFileFromTo === -2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
-        vars.deltaFileFromTo === 2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        vars.deltaFileFromTo === -2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        currRoom === 'game' && vars.deltaFileFromTo === 2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        currRoom === 'game' && vars.deltaFileFromTo === -2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        currRoom === 'game' && vars.deltaFileFromTo === 2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        currRoom === 'game' && vars.deltaFileFromTo === -2 && vars.deltaRankFromTo === 0 && vars.pieceFrom.charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
     ];
 
     let isPossible;
@@ -969,10 +1180,10 @@ function isMovePossibleAlt(fromSquare, toSquare, arr) {
         deltaRank(fromSquare, toSquare) === 1 && deltaFile(fromSquare, toSquare) === -1,
         deltaRank(fromSquare, toSquare) === -1 && deltaFile(fromSquare, toSquare) === 1,
         deltaRank(fromSquare, toSquare) === -1 && deltaFile(fromSquare, toSquare) === -1,
-        deltaFile(fromSquare, toSquare) === 2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        deltaFile(fromSquare, toSquare) === -2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
-        deltaFile(fromSquare, toSquare) === 2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
-        deltaFile(fromSquare, toSquare) === -2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        currRoom === 'game' && deltaFile(fromSquare, toSquare) === 2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('h1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        currRoom === 'game' && deltaFile(fromSquare, toSquare) === -2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'w' && !squaresMovedHistory.includes('e1') && !squaresMovedHistory.includes('a1') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
+        currRoom === 'game' && deltaFile(fromSquare, toSquare) === 2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('h8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, 2)),
+        currRoom === 'game' && deltaFile(fromSquare, toSquare) === -2 && deltaRank(fromSquare, toSquare) === 0 && getPieceFromSquareAlt(fromSquare, arr).charAt(0) === 'b' && !squaresMovedHistory.includes('e8') && !squaresMovedHistory.includes('a8') && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -1)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -2)) && isSquareEmpty(getSquareFromDelta(fromSquare, 0, -3)),
     ];
 
     let isPossible;
@@ -1096,6 +1307,18 @@ function hardRewriteSetup(rank, file, value) {
     piecesSetup[rank][file] = value;
 }
 
+function hardRewriteSquare(square, piece) {
+    piecesSetup[rankToIndex(square.charAt(1))][fileToIndex(square.charAt(0))] = piece;
+}
+
+function rewriteSetupToInitial() {
+    piecesSetup.forEach((el, index1) => {
+        el.forEach((_, index2) => {
+            hardRewriteSetup(index1, index2, startingSetup[index1][index2]);
+        });
+    });
+}
+
 function getSquaresFromPieces(piece) {
     // returns an array
     const squares = [];
@@ -1138,7 +1361,7 @@ function displayWhiteMove() {
     whiteMoveSpan.classList.add('white-span');
     whiteMoveSpan.textContent = moveHistory[moveTotal].notation;
     currMoveSpan.appendChild(whiteMoveSpan);
-    moveListUi.appendChild(currMoveSpan);
+    moveListDisplay.appendChild(currMoveSpan);
 }
 
 function displayBlackMove() {
@@ -1153,16 +1376,39 @@ function displayTime() {
     const whiteMinutes = Math.floor(whiteTime / 600);
     const whiteSeconds = Math.floor((whiteTime % 600) / 10);
     const whiteSecondsZero = whiteSeconds < 10 ? '0' : '';
-    whiteTimeUI.textContent = whiteMinutes + ':' + whiteSecondsZero + whiteSeconds;
+    whiteTimeDisplay.textContent = whiteMinutes + ':' + whiteSecondsZero + whiteSeconds;
     
     const blackMinutes = Math.floor(blackTime / 600);
     const blackSeconds = Math.floor((blackTime % 600) / 10);
     const blackSecondsZero = blackSeconds < 10 ? '0' : '';
-    blackTimeUI.textContent = blackMinutes + ':' + blackSecondsZero + blackSeconds;
+    blackTimeDisplay.textContent = blackMinutes + ':' + blackSecondsZero + blackSeconds;
 }
 
 function getAudio(file) {
     const sound = new Audio();
     sound.src = `./audio/${file}`;
     return sound;
+}
+
+function img(file) {
+    const image = new Image();
+    image.src = `./pieces/${file}`;
+    return image;
+}
+
+function createEmptySetup() {
+    return Array(8).fill(Array(8).fill(''));
+}
+
+function clearSetup() {
+    piecesSetup.forEach((el, index1) => {
+        el.forEach((_, index2) => {
+            hardRewriteSetup(index1, index2, createEmptySetup()[index1][index2]);
+        });
+    });
+}
+
+function fullNameToAbv(name) {
+    const pair = name.replace('lack-', '').replace('hite-', '').replace('knight', 'n').slice(0, 2);
+    return pair.slice(0, 1) + pair.slice(1).toUpperCase();
 }

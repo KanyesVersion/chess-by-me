@@ -93,15 +93,15 @@ input[type="text"] {
     padding: 0 .5rem;
 }
 
-#time-mode-container {
+.row-container {
     width: 100%;
     display: flex;
-    justify-content: space-evenly;
+    justify-content: center;
     align-items: center;
+    gap: .5rem
 }
 
-select {
-    width: 60px;
+.dropdown {
     height: 2.5rem;
     font-size: 1.5rem;
     border-radius: .25rem;
@@ -111,7 +111,11 @@ select {
     cursor: pointer;
 }
 
-#start-btn {
+#time-mode-dropdown {
+    width: 60px;
+}
+
+.startish-btn {
     padding: 1rem;
     width: 80%;
     margin-top: 1rem;
@@ -123,7 +127,18 @@ select {
     cursor: pointer;
 }
 
-#start-btn:active {
+.backish-btn {
+    width: 60%;
+    padding: .5rem;
+    font-size: 1rem;
+    border-radius: .35rem;
+    background-color: #141414;
+    color: #fcfcfc;
+    border: 2px solid #777;
+    cursor: pointer;
+}
+
+button:active {
     transform: scale(.95);
 }
 
@@ -199,6 +214,50 @@ select {
     align-items: center;
     justify-content: center;
     gap: .5rem;
+}
+
+#practice-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around   ;
+    height: 100%;
+    width: 100%;
+}
+
+.practice-icons {
+    width: 80%;
+    align-self: center;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    place-content: center;
+    place-items: center;
+    background-color: #afafaf;
+    border-radius: .25rem;
+}
+
+.practice-icon {
+    cursor: pointer;
+}
+
+#current-practice-icon {
+    width: 4.5rem;
+    height: 4.5rem;
+    background-color: #afafaf;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: .25rem;
+    outline: 4px solid #121212;
+}
+
+#current-practice-icon img {
+    width: 100%;
+}
+
+img {
+    -webkit-user-drag: none;
 }
 
 .hidden {

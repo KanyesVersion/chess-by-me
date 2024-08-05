@@ -20,8 +20,8 @@
             <div class="name-wrapper">
                 <img src="./pieces/black-circle.png" height="16"><input id="black-name-input" type="text" placeholder="BLACK" maxlength="8">
             </div>
-            <div id="time-mode-container">
-                <select id="time-mode-dropdown">
+            <div id="time-mode-container" class="row-container">
+                <select id="time-mode-dropdown" class="dropdown">
                     <option value="5">5</option>
                     <option value="10" selected>10</option>
                     <option value="15">15</option>
@@ -30,7 +30,17 @@
                 </select>
                 <div>minute game</div>
             </div>
-            <button id="start-btn">START GAME</button>
+            <button id="start-btn" class="startish-btn">START GAME</button>
+            <div id="turn-set-container" class="row-container hidden">
+                <div>Playing:</div>
+                <select id="playing-dropdown" class="dropdown">
+                    <option value="white">White</option>
+                    <option value="black">Black</option>
+                </select>
+            </div>
+            <button id="run-btn" class="startish-btn hidden">RUN TEST</button>
+            <button id="practice-mode-btn" class="backish-btn">Practice Mode</button>
+            <button id="practice-back-btn" class="backish-btn hidden">Back</button>
         </div>
         <button id="restart-btn" class="hidden">Restart?</button>
     </div>
@@ -43,6 +53,27 @@
         <div id="time-section" class="hidden">
             <div class="color-time-wrapper"><img src="./pieces/white-circle.png" height="16"><div id="white-time" class="color-time"></div></div>
             <div class="color-time-wrapper"><img src="./pieces/black-circle.png" height="16"><div id="black-time" class="color-time"></div></div>
+        </div>
+
+        <!-- practice mode -->
+        <div id="practice-section" class="hidden">
+            <div id="practice-black-icons" class="practice-icons">
+                <div id="practice-black-pawn-icon" class="practice-icon"><img src="./pieces/black-pawn.png" width="64"></div>
+                <div id="practice-black-rook-icon" class="practice-icon"><img src="./pieces/black-rook.png" width="64"></div>
+                <div id="practice-black-bishop-icon" class="practice-icon"><img src="./pieces/black-bishop.png" width="64"></div>
+                <div id="practice-black-knight-icon" class="practice-icon"><img src="./pieces/black-knight.png" width="64"></div>
+                <div id="practice-black-queen-icon" class="practice-icon"><img src="./pieces/black-queen.png" width="64"></div>
+                <div id="practice-black-king-icon" class="practice-icon"><img src="./pieces/black-king.png" width="64"></div>
+            </div>
+            <div id="practice-white-icons" class="practice-icons">
+                <div id="practice-white-pawn-icon" class="practice-icon"><img src="./pieces/white-pawn.png" width="64"></div>
+                <div id="practice-white-rook-icon" class="practice-icon"><img src="./pieces/white-rook.png" width="64"></div>
+                <div id="practice-white-bishop-icon" class="practice-icon"><img src="./pieces/white-bishop.png" width="64"></div>
+                <div id="practice-white-knight-icon" class="practice-icon"><img src="./pieces/white-knight.png" width="64"></div>
+                <div id="practice-white-queen-icon" class="practice-icon"><img src="./pieces/white-queen.png" width="64"></div>
+                <div id="practice-white-king-icon" class="practice-icon"><img src="./pieces/white-king.png" width="64"></div>
+            </div>
+            <div id="current-practice-icon"></div>
         </div>
     </div>
     <script src="main.js"></script>
