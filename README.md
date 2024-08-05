@@ -2,12 +2,11 @@ Chess by me
 
 Issues/To fix:
 - The game lags when either king enters check because I use exponentially layered forEach loops. Don't know how to handle legal/illegal move logic without that.
-- Kings can currently castle while the square right next to them is attacked
+- Kings can currently castle while the square right next to them is attacked.
 
 Missing/To add:
 - En passant
 - Stalemate
-- Kings can currently castle while the square right next to them is attacked
 - Abort game/resign
 - Rewind moves, see board in previous states
 - Click piece -> click square controls, in addition to current drag and drop
