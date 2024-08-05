@@ -3,7 +3,7 @@ Chess by me
 Issues/To fix:
 - The game lags when either king enters check because I use exponentially layered forEach loops. Don't know how to handle legal/illegal move logic without that.
 - Kings can currently castle while the square right next to them is attacked.
-- The color indicator turns green for moves that would result in check, when it should turn red (but the game correctly doesn't let you play them). Couldn't fix this without major performance issues.
+- The color indicator turns green for moves that would result in your own check, when it should turn red (but the game correctly doesn't let you play them). Couldn't fix this without major performance issues.
 
 Missing/To add:
 - En passant
